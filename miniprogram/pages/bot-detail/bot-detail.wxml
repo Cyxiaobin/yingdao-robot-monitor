@@ -1,0 +1,49 @@
+<view class="detail-wrap">
+  <view class="info-card">
+    <view class="info-head">
+      <view class="status-dot" style="background:{{statusColor}}"></view>
+      <text class="info-title">{{currentApp || name}}</text>
+      <text class="tag" style="color:{{statusColor}};background:{{statusBg}}">{{statusLabel}}</text>
+    </view>
+    <view class="info-line">
+      <text class="info-key">机器人账号</text>
+      <text class="info-val">{{name}}</text>
+    </view>
+    <view class="info-line">
+      <text class="info-key">IP 地址</text>
+      <text class="info-val">{{ip}}</text>
+    </view>
+    <view class="info-line">
+      <text class="info-key">状态枚举</text>
+      <text class="info-val">{{status}}</text>
+    </view>
+    <view wx:if="{{jobUuid}}" class="info-line">
+      <text class="info-key">最近运行 job</text>
+      <text class="info-val">{{jobUuid}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{runId}}" class="stop-bar">
+    <view class="stop-btn" bindtap="onStopTap">停止当前运行的应用</view>
+    <text class="stop-note">该机器人有运行中的任务；操作前会二次确认</text>
+  </view>
+
+  <view class="section-head">
+    <text class="section-title">运行日志</text>
+    <text class="section-more">下拉刷新</text>
+  </view>
+
+  <view wx:if="{{errorMsg}}" class="err-bar" bindtap="onRetryTap">{{errorMsg}} · 点击重试</view>
+
+  <view class="card">
+    <block wx:for="{{logs}}" wx:key="logId">
+      <view class="log-row">
+        <text class="log-time">{{item.time}}</text>
+        <text class="log-level {{item.isError ? 'log-error' : ''}}">{{item.level}}</text>
+        <text class="log-content">{{item.content}}</text>
+      </view>
+    </block>
+    <view wx:if="{{loading && !logs.length}}" class="empty">加载中...</view>
+    <view wx:if="{{!loading && !logs.length}}" class="empty">暂无日志</view>
+  </view>
+</view>

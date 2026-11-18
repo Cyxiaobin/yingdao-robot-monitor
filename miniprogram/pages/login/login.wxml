@@ -1,0 +1,32 @@
+<view class="lp-page">
+  <view class="lp-hero">
+    <view class="lp-logo">YD</view>
+    <view class="lp-title">影刀机器人指挥中心</view>
+    <view class="lp-sub">仅查看当天运行</view>
+  </view>
+
+  <view class="lp-card">
+    <view wx:if="{{checking}}" class="lp-checking">正在检查登录态…</view>
+    <view wx:if="{{!checking}}">
+      <text class="lp-label">账号</text>
+      <input class="lp-input" value="{{username}}" bindinput="onUserInput"
+        placeholder="请输入账号" confirm-type="next" />
+      <text class="lp-label">密码</text>
+      <input class="lp-input" password value="{{password}}" bindinput="onPwdInput"
+        bindconfirm="onSubmit" confirm-type="done" placeholder="请输入密码" />
+      <view wx:if="{{errorMsg}}" class="lp-error">{{errorMsg}}</view>
+      <view class="lp-btn {{logging ? 'disabled' : ''}}" bindtap="onSubmit">
+        {{logging ? '登录中…' : '登 录'}}
+      </view>
+      <view class="lp-note">账号由超级管理员在「设置 → 账号管理」中添加。普通用户可查看看板、异常、应用与设置，仅账号管理是管理员专属。</view>
+    </view>
+  </view>
+
+  <view class="lp-base" bindtap="onToggleBase">{{showBase ? '收起后端地址' : '修改后端地址'}}</view>
+  <view wx:if="{{showBase}}" class="lp-card lp-base-card">
+    <input class="lp-input" value="{{baseInput}}" bindinput="onBaseInput"
+      placeholder="http://192.168.0.158:8000" />
+    <view class="lp-btn small" bindtap="onSaveBase">保存并重新检查</view>
+    <view class="lp-current">当前：{{backendBase}}</view>
+  </view>
+</view>

@@ -1,0 +1,70 @@
+name: Bug 反馈
+description: 报告一个可以复现的问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先确认这不是你的配置问题：`/health` 返回的 `mock_mode`、`auth_required` 是否符合预期。
+        涉及密钥的内容不要贴进 issue，Secret 请打码成 `AKxxxx***`。
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 发生了什么
+      description: 实际行为和预期行为分别是什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 启动后端，YINGDAO_MOCK=1
+        2. 打开 /board
+        3. 点击「异常」标签
+        4. 看到 ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: 涉及的端
+      options:
+        - 后端 API / WS
+        - 浏览器看板
+        - 微信小程序
+        - 部署配置
+        - 不确定
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本或提交号
+      placeholder: main 分支 commit sha，或你拉取的时间
+    validations:
+      required: false
+
+  - type: textarea
+    id: env
+    attributes:
+      label: 运行环境
+      placeholder: |
+        Python 版本 / Node 版本 / 操作系统
+        影刀是公有云还是专有云
+        是否走 Nginx 反代
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志或截图
+      description: 后端异常栈、浏览器控制台报错。粘贴前先删掉密钥和内部 IP
+      render: shell
+    validations:
+      required: false

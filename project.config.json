@@ -1,0 +1,33 @@
+{
+  "miniprogramRoot": "miniprogram/",
+  "projectname": "影刀RPA机器人监控",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "uglifyFileName": false,
+    "enhance": true,
+    "packNpmRelationList": [],
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "useCompilerPlugins": false
+  },
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "backend" },
+      { "type": "folder", "value": "docs" },
+      { "type": "folder", "value": ".workbuddy" },
+      { "type": "file", "value": "README.md" },
+      { "type": "file", "value": "小程序项目档案.md" }
+    ],
+    "include": []
+  },
+  "appid": "touristappid",
+  "editorSetting": {}
+}

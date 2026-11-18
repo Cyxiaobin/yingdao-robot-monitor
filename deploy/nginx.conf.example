@@ -1,0 +1,60 @@
+# 影刀 RPA 监控后端 —— 生产 Nginx 反代模板
+# 用法：把 your-domain.example.com 换成已备案域名，cert/key 换成实际证书路径，
+#       放到 /etc/nginx/conf.d/ 下，nginx -t 通过后 reload。
+#
+# 三件关键事（对应 2026-11-18 安全审查）：
+#   1. 影刀 token 接口把 accessKeySecret 放在 URL query 里（API 硬性要求，代码改不了）。
+#      下面 log_format main 不含 $args / $request_uri，避免密钥落进 access.log。
+#   2. WebSocket 升级头必须显式透传，否则 /ws 连不上。
+#   3. /api/callback 透传 X-Callback-Token 请求头给后端校验。
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+# 刻意只记录状态码与 URI 路径（$uri 不含 query string），杜绝 Secret 入日志
+log_format safe '$remote_addr - $remote_user [$time_local] "$request_method $uri" '
+                '$status $body_bytes_sent "$http_referer" "$http_user_agent"';
+
+server {
+    listen 80;
+    server_name your-domain.example.com;
+    # 微信公众平台校验文件 / ACME 挑战走这里；上线后全站 302 到 HTTPS
+    location /.well-known/ { root /var/www/html; }
+    location / { return 301 https://$host$request_uri; }
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.example.com;
+
+    ssl_certificate     /etc/nginx/ssl/your-domain.crt;
+    ssl_certificate_key /etc/nginx/ssl/your-domain.key;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+
+    access_log /var/log/nginx/yingdao-monitor.access.log safe;
+    error_log  /var/log/nginx/yingdao-monitor.error.log warn;
+
+    client_max_body_size 2m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket：/ws 握手必须带这两行
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 3600s;   # 长连接，配合前端 25 秒心跳
+
+        # 回调令牌原样透传；后端校验 X-Callback-Token
+        proxy_set_header X-Callback-Token $http_x_callback_token;
+    }
+}
+
+# 注意：用 $uri 而非 $request_uri 记录日志后，所有带 query 的接口（含 /api/apps/search
+# 的 keyword）都不会记录参数。如排障需要 keyword，可在后端单独打审计日志，别在反代层放开。

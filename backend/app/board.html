@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1e1b4b">
+<title>影刀机器人指挥中心</title>
+<style>
+  :root{
+    --primary:#5b4bd6;--primary-deep:#1e1b4b;--primary-soft:#eeebff;
+    --blue:#3b82f6;--blue-bg:#e8f1ff;
+    --green:#10b981;--green-bg:#e6f8f1;
+    --red:#ef4444;--red-bg:#fdecec;
+    --amber:#d97706;--amber-bg:#fff3e2;
+    --grey:#94a3b8;--grey-bg:#f1f3f7;
+    --text:#1c1b2e;--sub:#65637c;--hint:#9b99ae;
+    --bg:#f4f5f9;--surface:#fff;--border:#ecebf2;
+    --shadow:0 8px 28px rgba(30,27,75,.07);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;background:#e9eaf2;color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  button,input,select{font-family:inherit;font-size:inherit;outline:none}
+  button{cursor:pointer;border:0;background:none;color:inherit}
+  .shell{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);
+    padding-bottom:128px;position:relative;overflow:hidden;box-shadow:0 0 60px rgba(30,27,75,.08)}
+
+  /* ---------- Hero ---------- */
+  .hero{position:relative;background:linear-gradient(135deg,#1e1b4b 0%,#3a2f9c 52%,#6d5ce7 100%);
+    border-radius:0 0 28px 28px;padding:22px 20px 46px;overflow:hidden;color:#fff}
+  .glow{position:absolute;border-radius:50%;pointer-events:none;filter:blur(2px)}
+  .glow.a{width:230px;height:230px;right:-70px;top:-90px;
+    background:radial-gradient(circle,rgba(167,139,250,.42),transparent 68%)}
+  .glow.b{width:180px;height:180px;left:-80px;bottom:-110px;
+    background:radial-gradient(circle,rgba(96,165,250,.30),transparent 70%)}
+  .hero-in{position:relative;z-index:2}
+  .hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .eyebrow{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;
+    color:rgba(255,255,255,.68);display:flex;align-items:center;gap:6px;font-weight:600}
+  .eyebrow i{width:5px;height:5px;border-radius:50%;background:#a78bfa;display:block}
+  h1{margin:9px 0 3px;font-size:23px;font-weight:700;letter-spacing:.4px}
+  .hero-sub{margin:0;font-size:11px;color:rgba(255,255,255,.66)}
+  .pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:6px 10px;
+    font-size:11px;white-space:nowrap;backdrop-filter:blur(8px)}
+  .pulse{width:7px;height:7px;border-radius:50%;background:#34d399;position:relative}
+  .pulse:after{content:"";position:absolute;inset:-3px;border-radius:50%;
+    border:1px solid #34d399;animation:ring 1.8s ease-out infinite}
+  .pulse.off{background:#f87171}.pulse.off:after{border-color:#f87171}
+  @keyframes ring{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.7);opacity:0}}
+  .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);margin-top:24px}
+  .hstat{text-align:center;position:relative}
+  .hstat+.hstat:before{content:"";position:absolute;left:0;top:6px;bottom:6px;
+    width:1px;background:rgba(255,255,255,.14)}
+  .hstat b{display:block;font-size:22px;font-weight:700;line-height:1.15;
+    font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .hstat small{display:block;font-size:10px;color:rgba(255,255,255,.62);margin-top:3px}
+  .hstat b.warn{color:#fca5a5}
+
+  /* ---------- Content ---------- */
+  .content{position:relative;z-index:3;margin-top:-26px;padding:0 14px}
+  .card{background:var(--surface);border-radius:18px;box-shadow:var(--shadow);
+    margin-bottom:14px;overflow:hidden;border:1px solid rgba(236,235,242,.7)}
+  .card-head{display:flex;align-items:center;justify-content:space-between;padding:15px 16px 9px}
+  .card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+  .card-title svg{width:15px;height:15px;color:var(--primary)}
+  .card-meta{font-size:11px;color:var(--hint)}
+  .head-actions{display:flex;align-items:center;gap:8px}
+  .mini-btn{font-size:11px;color:var(--primary);background:var(--primary-soft);
+    padding:5px 10px;border-radius:9px;font-weight:600}
+  .row{display:flex;align-items:center;gap:11px;padding:12px 16px;
+    border-bottom:1px solid var(--border)}
+  .row:last-child{border-bottom:0}
+  .avatar{width:36px;height:36px;border-radius:11px;flex:none;display:flex;
+    align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff}
+  .avatar.run{background:linear-gradient(135deg,#3b82f6,#60a5fa)}
+  .avatar.idle{background:linear-gradient(135deg,#10b981,#34d399)}
+  .avatar.err{background:linear-gradient(135deg,#ef4444,#f87171)}
+  .avatar.off{background:linear-gradient(135deg,#94a3b8,#cbd5e1)}
+  .row-main{flex:1;min-width:0}
+  .row-title{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row-sub{font-size:11px;color:var(--hint);margin-top:2px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .badge{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:8px;flex:none}
+  .b-run{color:var(--blue);background:var(--blue-bg)}
+  .b-ok{color:var(--green);background:var(--green-bg)}
+  .b-err{color:var(--red);background:var(--red-bg)}
+  .b-warn{color:var(--amber);background:var(--amber-bg)}
+  .b-off{color:var(--grey);background:var(--grey-bg)}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .dot.live{background:var(--blue);box-shadow:0 0 0 4px var(--blue-bg);animation:breathe 2s infinite}
+  @keyframes breathe{50%{box-shadow:0 0 0 7px rgba(59,130,246,.12)}}
+  .empty{padding:34px 16px;text-align:center;color:var(--hint);font-size:12px}
+  .empty svg{width:46px;height:46px;color:#d8d6e6;display:block;margin:0 auto 10px}
+  .err-bar{display:none;margin:0 0 12px;background:var(--red-bg);color:#b91c1c;
+    border-radius:12px;padding:10px 13px;font-size:11.5px}
+
+  /* 时间轴式运行列表 */
+  .tl-row{display:flex;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);position:relative}
+  .tl-row:last-child{border-bottom:0}
+  .tl-rail{width:20px;flex:none;display:flex;flex-direction:column;align-items:center;padding-top:3px}
+  .tl-dot{width:9px;height:9px;border-radius:50%;flex:none;z-index:1}
+  .tl-line{width:1px;flex:1;background:var(--border);margin-top:5px;min-height:14px}
+  .tl-body{flex:1;min-width:0}
+  .tl-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .tl-name{font-size:13px;font-weight:600;line-height:1.35;word-break:break-all}
+  .tl-meta{font-size:10.5px;color:var(--hint);margin-top:3px}
+  .tl-remark{font-size:11px;color:#b91c1c;background:var(--red-bg);
+    border-radius:8px;padding:6px 9px;margin-top:7px;word-break:break-all}
+  .ops{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+  .op{font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:8px;
+    border:1px solid var(--border);color:var(--sub);background:#fafafd}
+  .op.pri{color:#fff;background:var(--primary);border-color:var(--primary)}
+  .op.danger{color:var(--red);border-color:#f7cfcf;background:#fff8f8}
+  .op.link{color:var(--primary);border-color:#ded9ff;background:var(--primary-soft)}
+
+  /* 分段过滤 */
+  .seg{display:flex;gap:4px;background:#f0eff6;border-radius:11px;padding:3px;margin:0 0 12px}
+  .seg button{flex:1;font-size:11.5px;padding:6px 0;border-radius:8px;color:var(--sub);font-weight:600}
+  .seg button.on{background:#fff;color:var(--primary);box-shadow:0 2px 8px rgba(30,27,75,.08)}
+
+  /* 报警卡 */
+  .alarm-card{border-left:3px solid var(--red)}
+  .alarm-top{display:flex;align-items:flex-start;justify-content:space-between;gap:9px}
+  .alarm-name{font-size:13.5px;font-weight:650;word-break:break-all}
+  .alarm-reason{font-size:11px;color:var(--sub);margin-top:6px;word-break:break-all}
+  .alarm-time{font-size:10.5px;color:var(--hint);margin-top:4px}
+
+  /* 搜索 */
+  .search-wrap{display:flex;align-items:center;gap:9px;background:#fff;
+    border:1px solid var(--border);border-radius:14px;padding:11px 13px;
+    box-shadow:var(--shadow);margin-bottom:10px}
+  .search-wrap svg{width:16px;height:16px;color:var(--hint);flex:none}
+  .search-wrap input{flex:1;border:0;background:none;font-size:13px;min-width:0}
+  .search-wrap button{color:var(--hint);font-size:16px;line-height:1;padding:0 2px}
+  .picker{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--border);
+    border-radius:13px;padding:10px 13px;margin-bottom:12px}
+  .picker label{font-size:11.5px;color:var(--sub);flex:none}
+  .picker select{flex:1;border:0;background:none;font-size:12.5px;color:var(--text);min-width:0}
+  .app-row{display:flex;align-items:center;gap:11px;padding:13px 16px;border-bottom:1px solid var(--border)}
+  .app-row:last-child{border-bottom:0}
+  .app-icon{width:36px;height:36px;border-radius:11px;flex:none;display:flex;
+    align-items:center;justify-content:center;background:var(--primary-soft);color:var(--primary)}
+  .app-icon svg{width:17px;height:17px}
+  .tag-ver{font-size:10px;color:var(--hint);background:var(--grey-bg);border-radius:6px;padding:2px 6px}
+  .run-btn{font-size:11px;font-weight:700;color:#fff;background:var(--primary);
+    padding:7px 13px;border-radius:10px;flex:none;box-shadow:0 4px 12px rgba(91,75,214,.24)}
+
+  /* 设置 */
+  .field{margin:0 16px 14px}
+  .field label{display:block;font-size:11.5px;color:var(--sub);font-weight:600;margin-bottom:6px}
+  .field input{width:100%;border:1px solid var(--border);background:#fbfbfe;border-radius:11px;
+    padding:11px 12px;font-size:12.5px;color:var(--text)}
+  .field input:focus{border-color:var(--primary);background:#fff}
+  .field .hint{font-size:10.5px;color:var(--hint);margin-top:5px;line-height:1.55}
+  .btn-row{display:flex;gap:8px;margin:0 16px 16px}
+  .btn{flex:1;padding:11px 0;border-radius:11px;font-size:12.5px;font-weight:700;text-align:center}
+  .btn.pri{background:var(--primary);color:#fff;box-shadow:0 5px 14px rgba(91,75,214,.22)}
+  .btn.ghost{background:var(--primary-soft);color:var(--primary)}
+  .info-line{display:flex;justify-content:space-between;gap:12px;padding:11px 16px;
+    border-bottom:1px solid var(--border);font-size:12px}
+  .info-line:last-child{border-bottom:0}
+  .info-line span:first-child{color:var(--sub)}
+  .info-line span:last-child{color:var(--text);font-weight:600;text-align:right;word-break:break-all}
+  .notice{margin:0 16px 16px;background:var(--amber-bg);color:#92400e;border-radius:11px;
+    padding:10px 12px;font-size:10.8px;line-height:1.6}
+  .section-label{font-size:11px;color:var(--hint);font-weight:700;letter-spacing:.6px;
+    margin:18px 4px 8px;text-transform:uppercase}
+
+  /* Tabbar：2026-11-17 按反馈整体加高，避免内容贴边、点按区域过小 */
+  .tabbar{position:fixed;bottom:0;left:0;right:0;z-index:20;max-width:480px;margin:0 auto;
+    display:flex;background:#fff;backdrop-filter:blur(16px);
+    border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom)}
+  .tab{flex:1;text-align:center;padding:17px 0 15px;color:var(--hint);position:relative}
+  .tab svg{width:23px;height:23px;display:block;margin:0 auto 6px}
+  .tab span{font-size:12px;font-weight:600}
+  .tab.on{color:var(--primary)}
+  .tab.on:before{content:"";position:absolute;top:0;left:36%;right:36%;height:3px;
+    border-radius:3px;background:var(--primary)}
+  .tbadge{position:absolute;top:10px;left:56%;background:var(--red);color:#fff;
+    font-size:9px;min-width:16px;height:16px;line-height:16px;border-radius:8px;padding:0 3px}
+
+  /* 弹层 */
+  .mask{position:fixed;inset:0;background:rgba(20,18,45,.46);z-index:40;opacity:0;
+    pointer-events:none;transition:opacity .25s}
+  .mask.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;bottom:0;left:0;right:0;z-index:50;max-width:480px;margin:0 auto;
+    background:#fff;border-radius:24px 24px 0 0;max-height:84vh;overflow:auto;
+    transform:translateY(102%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+    padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .sheet.show{transform:translateY(0)}
+  .grab{width:38px;height:4px;border-radius:3px;background:#e2e0ec;margin:11px auto 4px}
+  .sheet-head{padding:6px 18px 12px;border-bottom:1px solid var(--border)}
+  .sheet-head h2{margin:0;font-size:16px;font-weight:700;word-break:break-all}
+  .sheet-head p{margin:5px 0 0;font-size:11px;color:var(--hint)}
+  .sheet-body{padding:14px 18px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+  .kv div{background:#f8f8fc;border-radius:11px;padding:9px 11px}
+  .kv small{display:block;font-size:10px;color:var(--hint)}
+  .kv b{display:block;font-size:12.5px;margin-top:2px;word-break:break-all}
+  .block-title{font-size:12px;font-weight:700;margin:16px 0 8px;display:flex;
+    align-items:center;justify-content:space-between}
+  .error-box{background:var(--red-bg);color:#b91c1c;border-radius:11px;
+    padding:11px 12px;font-size:11.5px;word-break:break-all}
+  .log-item{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--border);font-size:11.5px}
+  .log-item:last-child{border-bottom:0}
+  .log-time{color:var(--hint);font-size:10.5px;flex:none;width:60px}
+  .log-text{flex:1;word-break:break-all}
+  .log-item.is-err .log-text{color:var(--red)}
+  .shot-thumb{width:100%;border-radius:11px;border:1px solid var(--border);display:block;margin-top:9px}
+  .sheet-foot{display:flex;gap:9px;padding:12px 18px 4px;border-top:1px solid var(--border)}
+
+  .dialog{position:fixed;z-index:60;left:50%;top:50%;transform:translate(-50%,-46%) scale(.96);
+    width:calc(100% - 56px);max-width:360px;background:#fff;border-radius:20px;padding:20px;
+    opacity:0;pointer-events:none;transition:all .22s}
+  .dialog.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+  .dialog h3{margin:0 0 8px;font-size:16px;font-weight:700}
+  .dialog p{margin:0;font-size:12px;color:var(--sub);line-height:1.65}
+  .dialog .warn{background:var(--amber-bg);color:#92400e;border-radius:10px;
+    padding:9px 11px;margin-top:11px;font-size:11px}
+  .dialog .dbtns{display:flex;gap:9px;margin-top:18px}
+  .dialog .dbtns button{flex:1;padding:10px 0;border-radius:11px;font-size:12.5px;font-weight:700}
+  .dbtns .cancel{background:#f2f1f7;color:var(--sub)}
+  .dbtns .confirm{background:var(--red);color:#fff}
+  .dbtns .confirm.safe{background:var(--primary)}
+
+  .viewer{position:fixed;inset:0;z-index:70;background:rgba(10,9,24,.94);display:none;
+    align-items:center;justify-content:center;padding:16px;flex-direction:column;gap:12px}
+  .viewer.show{display:flex}
+  .viewer img{max-width:100%;max-height:80vh;border-radius:10px;background:#fff}
+  .viewer span{color:#fff;font-size:12px}
+  .viewer button{color:#fff;border:1px solid rgba(255,255,255,.4);
+    border-radius:20px;padding:7px 18px;font-size:12px}
+
+  .toast{position:fixed;left:50%;bottom:118px;transform:translate(-50%,12px);z-index:80;
+    background:rgba(30,27,75,.95);color:#fff;font-size:12px;padding:10px 17px;
+    border-radius:22px;opacity:0;transition:all .25s;pointer-events:none;
+    max-width:86%;text-align:center;box-shadow:0 8px 24px rgba(30,27,75,.24)}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(91,75,214,.25);
+    border-top-color:var(--primary);border-radius:50%;animation:rot .7s linear infinite;vertical-align:-2px}
+  @keyframes rot{to{transform:rotate(360deg)}}
+
+  /* ---------- 登录（2026-11-17）---------- */
+  .gate{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;
+    padding:22px;background:linear-gradient(140deg,#1e1b4b 0%,#3a2f9c 58%,#6d5ce7 100%)}
+  .gate.show{display:flex}
+  .gate-box{width:100%;max-width:360px;background:#fff;border-radius:22px;padding:28px 22px 24px;
+    box-shadow:0 24px 70px rgba(12,10,40,.35)}
+  .gate-logo{width:44px;height:44px;border-radius:14px;background:var(--primary-soft);
+    color:var(--primary);display:flex;align-items:center;justify-content:center;
+    font-size:19px;font-weight:800;margin-bottom:16px}
+  .gate-box h2{margin:0 0 4px;font-size:21px}
+  .gate-box p.gate-sub{margin:0 0 20px;font-size:11.5px;color:var(--hint);line-height:1.6}
+  .gate-field{margin-bottom:13px}
+  .gate-field label{display:block;font-size:11px;color:var(--sub);font-weight:700;margin-bottom:6px}
+  .gate-field input{width:100%;height:44px;padding:0 13px;border:1px solid var(--border);
+    border-radius:11px;background:#fafafd;font-size:14px}
+  .gate-field input:focus{border-color:var(--primary);background:#fff}
+  .gate-btn{width:100%;height:45px;margin-top:6px;border-radius:12px;background:var(--primary);
+    color:#fff;font-size:14px;font-weight:700}
+  .gate-btn:disabled{opacity:.6}
+  .gate-msg{min-height:17px;margin-top:11px;font-size:11.5px;color:var(--red);text-align:center}
+  .gate-tip{margin-top:16px;padding-top:13px;border-top:1px solid var(--border);
+    font-size:10.5px;color:var(--hint);line-height:1.7}
+
+  /* 账号管理（仅超级管理员可见） */
+  .user-row{display:flex;align-items:center;gap:10px;padding:11px 16px;
+    border-bottom:1px solid var(--border)}
+  .user-row:last-child{border-bottom:0}
+  .u-av{width:32px;height:32px;border-radius:10px;background:var(--primary-soft);
+    color:var(--primary);display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;flex:none}
+  .u-main{flex:1;min-width:0}
+  .u-name{font-size:12.5px;font-weight:700;word-break:break-all}
+  .u-meta{font-size:10px;color:var(--hint);margin-top:2px}
+  .role-tag{font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;
+    background:var(--primary-soft);color:var(--primary);flex:none}
+  .role-tag.normal{background:var(--grey-bg);color:var(--sub)}
+  .u-del{font-size:11px;color:var(--red);background:var(--red-bg);
+    border-radius:9px;padding:6px 9px;flex:none}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="hero">
+    <div class="glow a"></div><div class="glow b"></div>
+    <div class="hero-in">
+      <div class="hero-top">
+        <div>
+          <div class="eyebrow"><i></i> YINGDAO RPA · LIVE MONITOR</div>
+          <h1>机器人指挥中心</h1>
+          <p class="hero-sub" id="heroSub">正在连接实时数据…</p>
+        </div>
+        <div class="pill"><span class="pulse" id="connPulse"></span><span id="connText">连接中</span></div>
+      </div>
+      <div class="hero-stats">
+        <div class="hstat"><b id="hOnline">–</b><small>在线机器人</small></div>
+        <div class="hstat"><b id="hRuns">–</b><small>今日运行</small></div>
+        <div class="hstat"><b id="hRate">–</b><small>成功率 %</small></div>
+        <div class="hstat"><b class="warn" id="hErr">–</b><small>异常待处理</small></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="err-bar" id="errBar"></div>
+
+    <!-- 看板 -->
+    <section id="panel-board">
+      <div class="seg">
+        <button class="on" data-filter="bots">机器人</button>
+        <button data-filter="running">运行中</button>
+        <button data-filter="done">已完成</button>
+      </div>
+      <div class="card" id="cardBots">
+        <div class="card-head">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8M12 18v3"/></svg>
+            机器人状态
+          </div>
+          <div class="head-actions"><span class="card-meta" id="botMeta">–</span>
+            <button class="mini-btn" data-act="refresh">刷新</button></div>
+        </div>
+        <div id="botList"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card" id="cardRuns" style="display:none">
+        <div class="card-head">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+            <span id="runTitle">已完成的流程</span>
+          </div>
+          <span class="card-meta" id="runMeta">–</span>
+        </div>
+        <div id="runList"><div class="empty">加载中…</div></div>
+      </div>
+    </section>
+
+    <!-- 异常 -->
+    <section id="panel-alarm" style="display:none">
+      <div class="card">
+        <div class="card-head"><div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.3 3.9 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          未处理异常</div><span class="card-meta" id="alarmMeta">–</span></div>
+        <div id="alarmList"><div class="empty">加载中…</div></div>
+      </div>
+      <div class="card"><div class="card-head"><div class="card-title">快捷操作</div></div>
+        <div style="padding:4px 16px 16px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="op link" data-act="clear-handled">恢复已处理记录</button>
+          <button class="op" data-act="go-apps">搜索并运行流程</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 应用 -->
+    <section id="panel-apps" style="display:none">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="appSearch" placeholder="搜索已发布的流程 / 应用名称" autocomplete="off">
+        <button data-act="clear-search" aria-label="清除">×</button>
+      </div>
+      <div class="picker">
+        <label>运行到</label>
+        <select id="botPicker"><option value="">默认（影刀自动分配）</option></select>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          已发布流程</div>
+          <div class="head-actions"><span class="card-meta" id="appMeta">–</span>
+            <button class="mini-btn" data-act="app-refresh">刷新目录</button></div>
+        </div>
+        <div id="appList"><div class="empty">输入关键字搜索，或留空查看全部</div></div>
+      </div>
+      <div style="text-align:center;padding:2px 0 10px">
+        <button class="op" data-act="app-more" id="appMore" style="display:none">加载更多</button>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section id="panel-settings" style="display:none">
+      <div class="section-label">连接</div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">后端服务</div>
+          <button class="mini-btn" data-act="test-conn">测试连接</button></div>
+        <div class="field"><label>后端地址</label>
+          <input id="baseInput" placeholder="http://192.168.1.100:8000" autocomplete="off">
+          <div class="hint">手机与电脑需在同一 WiFi。修改后点「保存地址」立即生效。</div></div>
+        <div class="btn-row">
+          <button class="btn ghost" data-act="save-base">保存地址</button>
+          <button class="btn pri" data-act="reset-base">恢复默认</button>
+        </div>
+        <div class="info-line"><span>数据源</span><span id="setMode">–</span></div>
+        <div class="info-line"><span>影刀域名</span><span id="setBaseUrl">–</span></div>
+        <div class="info-line"><span>轮询间隔</span><span id="setInterval">–</span></div>
+        <div class="info-line"><span>远程控制</span><span id="setControl">–</span></div>
+      </div>
+
+      <div class="section-label">影刀开放 API 凭证</div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">AccessKey 配置</div>
+          <span class="card-meta" id="setKeyState">未读取</span></div>
+        <div class="field"><label>AccessKey ID</label>
+          <input id="keyInput" placeholder="例如 xxxxxxxx@platform" autocomplete="off"></div>
+        <div class="field"><label>AccessKey Secret</label>
+          <input id="secretInput" type="password" placeholder="留空表示不修改" autocomplete="new-password">
+          <div class="hint">Secret 仅提交到后端写入 <b>backend/.env</b>，不会保存在浏览器或小程序里，也不会回显。</div></div>
+        <div class="field" id="adminField" style="display:none"><label>管理口令（服务端已启用）</label>
+          <input id="adminInput" type="password" placeholder="ADMIN_TOKEN" autocomplete="off"></div>
+        <div class="btn-row">
+          <button class="btn pri" data-act="save-key">保存并生效</button>
+        </div>
+        <div class="notice">这里配置的是<b>影刀开放 API 凭证</b>（accessKeyId / accessKeySecret），用于后端拉取机器人数据。
+          小程序的 <b>AppID / AppSecret</b> 属于微信公众平台，需在微信后台与开发者工具里配置，不在此处填写。</div>
+      </div>
+
+      <div class="section-label">账号</div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">当前登录</div>
+          <button class="mini-btn" data-act="logout">退出登录</button></div>
+        <div class="info-line"><span>账号</span><span id="acctName">–</span></div>
+        <div class="info-line"><span>角色</span><span id="acctRole">–</span></div>
+        <div class="info-line"><span>数据范围</span><span id="acctScope">仅当天</span></div>
+        <div class="field" style="margin-top:12px"><label>修改自己的密码</label>
+          <input id="oldPwdInput" type="password" placeholder="旧密码" autocomplete="off" style="margin-bottom:8px">
+          <input id="newPwdInput" type="password" placeholder="新密码（至少 6 位）" autocomplete="new-password">
+        </div>
+        <div class="btn-row"><button class="btn ghost" data-act="pwd-change">修改密码并重新登录</button></div>
+      </div>
+
+      <!-- 管理员专属：添加 / 查看 / 删除普通用户 -->
+      <div id="adminSection" class="hidden">
+        <div class="section-label">账号管理 · 仅超级管理员</div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">添加普通用户</div>
+            <span class="card-meta" id="userCount">–</span></div>
+          <div class="field"><label>账号</label>
+            <input id="newUserInput" placeholder="3-32 位字母、数字或 . _ @ -" autocomplete="off"></div>
+          <div class="field"><label>初始密码</label>
+            <input id="newUserPwd" type="password" placeholder="至少 6 位" autocomplete="new-password">
+            <div class="hint">普通用户与管理员在看板、异常、应用、设置上权限相同；只有本区块是管理员专属。</div></div>
+          <div class="btn-row"><button class="btn pri" data-act="user-add">创建普通用户</button></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">账号列表</div>
+            <button class="mini-btn" data-act="user-refresh">刷新</button></div>
+          <div id="userList"><div class="empty">加载中…</div></div>
+        </div>
+      </div>
+
+      <div class="section-label">关于</div>
+      <div class="card">
+        <div class="info-line"><span>版本</span><span>v0.4 · 2026-11-17</span></div>
+        <div class="info-line"><span>实时通道</span><span>WebSocket /ws</span></div>
+        <div class="info-line"><span>数据来源</span><span>影刀开放 API</span></div>
+        <div class="info-line"><span>运行记录</span><span>仅展示当天</span></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<nav class="tabbar">
+  <div class="tab on" data-tab="board">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    <span>看板</span></div>
+  <div class="tab" data-tab="alarm">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+    <span>异常</span><span class="tbadge" id="tabBadge" style="display:none">0</span></div>
+  <div class="tab" data-tab="apps">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m13 2-9 11h7l-1 9 9-11h-7l1-9z"/></svg>
+    <span>应用</span></div>
+  <div class="tab" data-tab="settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.14.36.4.67.73.87.3.18.65.28 1 .28H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1z"/></svg>
+    <span>设置</span></div>
+</nav>
+
+<div class="mask" id="mask"></div>
+
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2 id="sheetTitle">运行详情</h2><p id="sheetSub">–</p></div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot" id="sheetFoot"></div>
+</div>
+
+<div class="dialog" id="dialog">
+  <h3 id="dlgTitle">确认操作</h3>
+  <p id="dlgText">–</p>
+  <div class="warn" id="dlgWarn">该操作会在生产环境真实执行，请确认。</div>
+  <div class="dbtns">
+    <button class="cancel" data-act="dlg-cancel">取消</button>
+    <button class="confirm" id="dlgOk" data-act="dlg-ok">确认</button>
+  </div>
+</div>
+
+<div class="viewer" id="viewer">
+  <img id="viewerImg" alt="失败截图">
+  <span id="viewerTip">错误现场截图</span>
+  <button data-act="viewer-close">关闭</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-logo">YD</div>
+    <h2>影刀机器人指挥中心</h2>
+    <p class="gate-sub">请使用超级管理员或普通用户账号登录，数据仅展示当天运行情况。</p>
+    <div class="gate-field"><label>账号</label>
+      <input id="loginUser" autocomplete="username" placeholder="请输入账号"></div>
+    <div class="gate-field"><label>密码</label>
+      <input id="loginPwd" type="password" autocomplete="current-password" placeholder="请输入密码"></div>
+    <button class="gate-btn" data-act="login-submit" id="loginBtn">登 录</button>
+    <div class="gate-msg" id="loginMsg"></div>
+    <div class="gate-tip">账号由超级管理员在「设置 → 账号管理」中添加。首次启动的内置管理员默认口令请在 backend/.env 中修改，并登录后尽快改密。</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var DEMO = new URLSearchParams(location.search).get('demo') === '1' || location.protocol === 'file:';
+  var STORE_BASE = 'yd_board_base', STORE_HANDLED = 'yd_board_handled';
+  var STORE_TOKEN = 'yd_board_token';
+  // 登录态：token 只存浏览器本地；服务端会话过期后会被 401 打回登录框
+  var TOKEN = (function () {
+    try { return localStorage.getItem(STORE_TOKEN) || ''; } catch (e) { return ''; }
+  })();
+  var ME = { authenticated: false, authEnabled: true, username: '', role: '' };
+  var booted = false, paused = false;
+  // 通过服务访问时自动用当前 origin（localhost / 局域网 IP 都对）；静态预览用演示地址
+  var DEFAULT_BASE = /^https?:$/.test(location.protocol)
+    ? location.origin : 'http://192.168.1.100:8000';
+  var API = (function () {
+    try { return localStorage.getItem(STORE_BASE) || DEFAULT_BASE; } catch (e) { return DEFAULT_BASE; }
+  })().replace(/\/+$/, '');
+  var state = { overview:{}, bots:[], runs:[], ts:'', settings:{}, apps:[], appTotal:0,
+                appPage:1, keyword:'', users:[], date:'' };
+  var tab = 'board', filter = 'bots', ws = null, retry = 0, wsTimer = null, pending = null, currentRun = null;
+  // 支持 ?filter=bots|running|done 直达指定标签（便于收藏链接与自动化验证）
+  (function () {
+    var m = location.search.match(/[?&]filter=(bots|running|done)(?:&|$)/);
+    if (m) filter = m[1];
+  })();
+  // 支持 ?tab=board|alarm|apps|settings 直达指定面板（便于收藏链接与截图）
+  (function () {
+    var m = location.search.match(/[?&]tab=(board|alarm|apps|settings)(?:&|$)/);
+    if (m) tab = m[1];
+  })();
+
+  /* ---------- 演示数据（静态打开也能完整预览 UI） ---------- */
+  var DEMO_SHOT = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">' +
+    '<rect width="640" height="420" fill="#f3f4f8"/>' +
+    '<rect x="0" y="0" width="640" height="46" fill="#2b2a45"/>' +
+    '<circle cx="22" cy="23" r="6" fill="#ef4444"/><circle cx="44" cy="23" r="6" fill="#f59e0b"/>' +
+    '<circle cx="66" cy="23" r="6" fill="#10b981"/>' +
+    '<text x="24" y="95" font-size="19" fill="#1c1b2e" font-family="sans-serif">影刀 RPA · 运行异常现场</text>' +
+    '<rect x="24" y="120" width="592" height="180" rx="10" fill="#fff" stroke="#e5e4ee"/>' +
+    '<text x="46" y="158" font-size="14" fill="#65637c" font-family="sans-serif">步骤 21：截取指定区域</text>' +
+    '<text x="46" y="192" font-size="14" fill="#ef4444" font-family="sans-serif">错误：无效的截图区域（区域坐标超出屏幕范围）</text>' +
+    '<text x="46" y="228" font-size="13" fill="#9b99ae" font-family="sans-serif">机器人：RPABOT03@demo · 10.0.8.31</text>' +
+    '<text x="46" y="260" font-size="13" fill="#9b99ae" font-family="sans-serif">应用：商超-退单写入</text>' +
+    '<text x="24" y="352" font-size="12" fill="#9b99ae" font-family="sans-serif">演示截图 · 真实数据下由影刀 OSS 返回</text></svg>');
+  function nowStr(mins) {
+    var d = new Date(Date.now() - (mins || 0) * 60000);
+    function p(n) { return ('0' + n).slice(-2); }
+    // 用本机时区，避免 toISOString() 在 UTC+8 凌晨把演示数据算成「昨天」
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +
+      p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+  }
+  var D = {
+    snapshot: {
+      ts: nowStr(0),
+      overview: { bot_total:8, bot_online:6, runs_today:30, success_rate:80, error_count:6 },
+      bots: [
+        { uuid:'b1', name:'RPABOT01@demo', ip:'10.0.8.6', status:'running', current_app:'总部004-银企直连-平安', machine_name:'DESKTOP-A1' },
+        { uuid:'b2', name:'RPABOT02@demo', ip:'10.0.8.7', status:'running', current_app:'抖音电商罗盘抓取', machine_name:'DESKTOP-A2' },
+        { uuid:'b3', name:'RPABOT03@demo', ip:'10.0.8.31', status:'idle', current_app:'', machine_name:'DESKTOP-A3' },
+        { uuid:'b4', name:'RPABOT04@demo', ip:'10.0.8.9', status:'error', current_app:'退单写入', machine_name:'DESKTOP-A4' },
+        { uuid:'b5', name:'RPABOT05@demo', ip:'10.0.8.12', status:'idle', current_app:'', machine_name:'DESKTOP-A5' },
+        { uuid:'b6', name:'RPABOT06@demo', ip:'10.0.8.15', status:'idle', current_app:'', machine_name:'DESKTOP-A6' },
+        { uuid:'b7', name:'RPABOT07@demo', ip:'10.0.8.18', status:'offline', current_app:'', machine_name:'DESKTOP-A7' },
+        { uuid:'b8', name:'RPABOT08@demo', ip:'10.0.8.21', status:'offline', current_app:'', machine_name:'DESKTOP-A8' }
+      ],
+      runs: [
+        { id:'t1', app_name:'总部004-银企直连-平安', status:'running', create_time:nowStr(2), duration_sec:120, remark:'', bot_uuid:'b1' },
+        { id:'t2', app_name:'抖音电商罗盘抓取', status:'finish', create_time:nowStr(9), duration_sec:184, remark:'', bot_uuid:'b2' },
+        { id:'t3', app_name:'商超-退单写入', status:'error', create_time:nowStr(16), duration_sec:63, remark:'第21行：无效的截图区域', bot_uuid:'b4' },
+        { id:'t4', app_name:'应收三表匹配', status:'finish', create_time:nowStr(24), duration_sec:97, remark:'', bot_uuid:'b3' },
+        { id:'t5', app_name:'商超-门店-退单核对', status:'stopped', create_time:nowStr(38), duration_sec:15, remark:'任务等待运行超时。原因：机器人未连接', bot_uuid:'b7' },
+        { id:'t6', app_name:'微信小店GMV同步', status:'finish', create_time:nowStr(52), duration_sec:211, remark:'', bot_uuid:'b5' }
+      ]
+    },
+    apps: { keyword:'', total:4, page:1, size:20, apps:[
+      { appId:'app-001', appName:'商超-退单写入', version:'7', ownerName:'张伟', publishTime:nowStr(600), description:'退单 Excel 写入 MySQL', supportParam:false, published:true },
+      { appId:'app-002', appName:'商超-门店-退单核对', version:'3', ownerName:'张伟', publishTime:nowStr(900), description:'退单数据入库', supportParam:true, published:true },
+      { appId:'app-003', appName:'应收三表匹配', version:'12', ownerName:'财务共享', publishTime:nowStr(1200), description:'公司支付信息 / SAP 银行信息匹配', supportParam:false, published:true },
+      { appId:'app-004', appName:'抖音电商罗盘抓取', version:'5', ownerName:'电商运营', publishTime:nowStr(1500), description:'罗盘 GMV 与退款数据', supportParam:false, published:true }
+    ]},
+    settings: { baseUrl:'https://api.yingdao.com', mockMode:false, hasCredentials:true,
+      accessKeyIdMasked:'AKd3m0***latform', adminTokenRequired:false, allowRemoteControl:true,
+      pollInterval:5, authEnabled:false, onlyToday:true, date:'2026-11-17' },
+    detail: { jobs:[{ jobUuid:'job-t3', status:'error', remark:'第21行：无效的截图区域', screenshotUrl:DEMO_SHOT }] },
+    logs: { logs:[
+      { time:nowStr(18), level:'信息', text:'开始执行：打开浏览器并登录业务系统' },
+      { time:nowStr(17), level:'信息', text:'读取退单 Excel，共 128 行' },
+      { time:nowStr(16), level:'信息', text:'执行到第 21 行：截取指定区域' },
+      { time:nowStr(16), level:'错误', text:'无效的截图区域（区域坐标超出屏幕范围）' },
+      { time:nowStr(16), level:'错误', text:'流程异常终止，任务状态 error' }
+    ]}
+  };
+
+  /* ---------- 工具 ---------- */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  function duration(sec) {
+    var s = Math.max(0, Math.round(Number(sec) || 0));
+    if (s < 60) return s + 's';
+    var m = Math.floor(s / 60), r = s % 60;
+    if (m < 60) return r ? m + 'm' + r + 's' : m + 'm';
+    return Math.floor(m / 60) + 'h' + (m % 60) + 'm';
+  }
+  function rel(v) {
+    if (!v) return '';
+    var t = Date.parse(String(v).replace('T',' ').replace(/-/g,'/').replace(/\.\d+.*$/,''));
+    if (isNaN(t)) return '';
+    var d = Math.max(0, Math.floor((Date.now() - t) / 1000));
+    if (d < 60) return '刚刚';
+    if (d < 3600) return Math.floor(d / 60) + ' 分钟前';
+    if (d < 86400) return Math.floor(d / 3600) + ' 小时前';
+    return Math.floor(d / 86400) + ' 天前';
+  }
+  function handled() {
+    try { return JSON.parse(localStorage.getItem(STORE_HANDLED) || '[]'); } catch (e) { return []; }
+  }
+  function setHandled(a) { try { localStorage.setItem(STORE_HANDLED, JSON.stringify(a.slice(-300))); } catch (e) {} }
+  function toast(msg) {
+    var el = $('toast'); el.textContent = msg; el.className = 'toast show';
+    clearTimeout(el._t); el._t = setTimeout(function () { el.className = 'toast'; }, 2400);
+  }
+  function conn(ok, text) {
+    $('connPulse').className = 'pulse' + (ok ? '' : ' off');
+    $('connText').textContent = text || (ok ? '实时连接' : '连接中');
+  }
+  function err(msg) {
+    var el = $('errBar'); el.style.display = msg ? 'block' : 'none'; el.textContent = msg || '';
+  }
+  var BOT = {
+    running:['运行中','b-run','#3b82f6','run'], busy:['运行中','b-run','#3b82f6','run'],
+    idle:['空闲','b-ok','#10b981','idle'], online:['空闲','b-ok','#10b981','idle'],
+    error:['报错','b-err','#ef4444','err'], failed:['报错','b-err','#ef4444','err'],
+    offline:['离线','b-off','#94a3b8','off'], disconnected:['离线','b-off','#94a3b8','off']
+  };
+  var RUN = {
+    finish:['成功','b-ok','#10b981','success'], success:['成功','b-ok','#10b981','success'],
+    error:['失败','b-err','#ef4444','fail'], fail:['失败','b-err','#ef4444','fail'],
+    stopped:['已停止','b-warn','#d97706','fail'], timeout:['超时','b-err','#ef4444','fail'],
+    running:['运行中','b-run','#3b82f6','running']
+  };
+  var RETRYABLE = { error:1, fail:1, failed:1, stopped:1, timeout:1, exception:1, cancel:1, cancelled:1 };
+  function botStyle(s) { return BOT[String(s||'').toLowerCase()] || ['未知','b-off','#94a3b8','off']; }
+  function runStyle(s) { return RUN[String(s||'').toLowerCase()] || ['未知','b-off','#94a3b8','unknown']; }
+  function isFail(r) { return runStyle(r.status)[3] === 'fail'; }
+  function canRetry(r) { return !!RETRYABLE[String(r.status||'').toLowerCase()] && state.settings.allowRemoteControl !== false; }
+
+  /* ---------- 数据层（demo / 真实） ---------- */
+  function demoResponse(path, opt) {
+    var body = opt.body || {};
+    if (path.indexOf('/health') === 0) return { status:'ok', mock_mode:false };
+    if (path.indexOf('/api/auth/me') === 0) {
+      return { authEnabled:false, authenticated:true, username:'演示管理员',
+               role:'admin', expiresAt:0 };
+    }
+    if (path.indexOf('/api/auth/login') === 0) {
+      return { success:true, authEnabled:false, token:'', username:'演示管理员', role:'admin' };
+    }
+    if (path.indexOf('/api/auth/users') === 0) {
+      return { success:true, total:2, users:[
+        { username:'admin', role:'admin', createdAt:'2026-11-17 09:00', builtin:true },
+        { username:'operator', role:'user', createdAt:'2026-11-17 10:00', builtin:false }
+      ]};
+    }
+    if (path.indexOf('/api/auth/logout') === 0) return { success:true };
+    if (path.indexOf('/api/auth/password') === 0) return { success:true, msg:'演示模式未真正改密' };
+    if (path.indexOf('/api/snapshot') === 0) return { data: D.snapshot };
+    if (path.indexOf('/api/apps/search') === 0) {
+      var kw = decodeURIComponent((path.split('keyword=')[1] || '').split('&')[0] || '');
+      var list = D.apps.apps.filter(function (a) { return !kw || a.appName.indexOf(kw) >= 0 || a.ownerName.indexOf(kw) >= 0; });
+      return { keyword:kw, total:list.length, page:1, size:20, apps:list };
+    }
+    if (path.indexOf('/api/apps/refresh') === 0) return { success:true, total:4, published:4 };
+    if (path.indexOf('/api/control/start') === 0) return { success:true, jobUuid:'demo-job-' + String(body.appId||'').slice(-4) };
+    if (path.indexOf('/api/control/retry') === 0) return { success:true, jobUuid:'demo-job-retry' };
+    if (path.indexOf('/api/control/stop-by-task') === 0) return { success:false, msg:'演示模式不会执行停止' };
+    if (path.indexOf('/api/settings/test') === 0) return { success:true, botCount:8 };
+    if (path.indexOf('/api/settings/credentials') === 0) return { success:true, accessKeyIdMasked:'DEMO***KEY' };
+    if (path.indexOf('/api/settings') === 0) return D.settings;
+    if (path.indexOf('/detail') >= 0) return D.detail;
+    if (path.indexOf('/logs') >= 0) return D.logs;
+    return {};
+  }
+  function api(path, opt) {
+    opt = opt || {};
+    if (DEMO) return Promise.resolve(demoResponse(path, opt));
+    var headers = { 'Content-Type':'application/json' };
+    if (opt.token) headers['X-Admin-Token'] = opt.token;
+    if (TOKEN) headers['Authorization'] = 'Bearer ' + TOKEN;
+    return fetch(API + path, {
+      method: opt.method || 'GET', headers: headers,
+      body: opt.body ? JSON.stringify(opt.body) : undefined,
+      cache: 'no-store'
+    }).then(function (r) {
+      if (r.status === 401 && path.indexOf('/api/auth/') !== 0) {
+        clearToken(); showGate('登录已过期，请重新登录');
+        throw new Error('登录已过期');
+      }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  /* ---------- 登录 / 账号 ---------- */
+  function saveToken(t) {
+    TOKEN = t || '';
+    try {
+      if (TOKEN) localStorage.setItem(STORE_TOKEN, TOKEN);
+      else localStorage.removeItem(STORE_TOKEN);
+    } catch (e) {}
+  }
+  function clearToken() { saveToken(''); }
+  function showGate(msg) {
+    paused = true;   // 未登录期间停止 WS 重连，避免用过期 token 反复握手
+    $('gate').classList.add('show');
+    $('loginMsg').textContent = msg || '';
+  }
+  function hideGate() { $('gate').classList.remove('show'); }
+  function applyAccount(m) {
+    ME = m || ME;
+    $('acctName').textContent = ME.username || '–';
+    $('acctRole').textContent = ME.role === 'admin' ? '超级管理员' : '普通用户';
+    $('adminSection').classList.toggle('hidden', ME.role !== 'admin');
+    if (ME.role === 'admin') loadUsers();
+  }
+  function doLogin() {
+    var u = ($('loginUser').value || '').trim();
+    var p = $('loginPwd').value || '';
+    if (!u || !p) { $('loginMsg').textContent = '请填写账号与密码'; return; }
+    $('loginBtn').disabled = true;
+    $('loginMsg').textContent = '';
+    api('/api/auth/login', { method:'POST', body:{ username:u, password:p } })
+      .then(function (r) {
+        $('loginBtn').disabled = false;
+        if (!r.success) { $('loginMsg').textContent = r.msg || '登录失败'; return; }
+        $('loginPwd').value = '';
+        saveToken(r.token || '');
+        paused = false;
+        applyAccount({ authenticated:true, authEnabled:r.authEnabled !== false,
+                       username:r.username, role:r.role });
+        hideGate();
+        if (r.mustChangePassword) toast('首次登录请到「设置 → 账号」修改默认密码');
+        if (!booted) boot(); else { load(); loadSettings(); connect(); }
+      }).catch(function (e) {
+        $('loginBtn').disabled = false;
+        $('loginMsg').textContent = '登录失败：' + e.message;
+      });
+  }
+  function loadUsers() {
+    return api('/api/auth/users').then(function (r) {
+      state.users = r.users || [];
+      renderUsers();
+    }).catch(function () { $('userList').innerHTML = emptyHtml('账号列表加载失败'); });
+  }
+  function renderUsers() {
+    $('userCount').textContent = state.users.length + ' 个账号';
+    $('userList').innerHTML = state.users.length ? state.users.map(function (u) {
+      var initial = String(u.username || '?').slice(0, 2).toUpperCase();
+      var isAdmin = u.role === 'admin';
+      return '<div class="user-row"><div class="u-av">' + esc(initial) + '</div>' +
+        '<div class="u-main"><div class="u-name">' + esc(u.username) + '</div>' +
+        '<div class="u-meta">创建 ' + esc(String(u.createdAt || '–').slice(0, 16)) +
+        ' · 最近登录 ' + esc(String(u.lastLoginAt || '从未').slice(0, 16)) + '</div></div>' +
+        '<span class="role-tag' + (isAdmin ? '' : ' normal') + '">' +
+        (isAdmin ? '管理员' : '普通用户') + '</span>' +
+        (u.builtin ? '' : '<button class="u-del" data-act="user-del" data-id="' +
+          esc(u.username) + '">删除</button>') + '</div>';
+    }).join('') : emptyHtml('暂无账号');
+  }
+  function todayOnly(runs) {
+    // 后端已按当天过滤，这里再兜一层：静态演示 / 旧版服务端也不会混入历史记录
+    var d = new Date(), key = d.getFullYear() + '-' +
+      ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+    return (runs || []).filter(function (r) {
+      var t = String(r.create_time || r.start_time || '').replace('T', ' ').slice(0, 10);
+      return t === key;
+    });
+  }
+
+  /* ---------- 渲染 ---------- */
+  function renderHero() {
+    var o = state.overview || {};
+    $('hOnline').textContent = o.bot_online == null ? '–' : o.bot_online;
+    $('hRuns').textContent = o.runs_today == null ? '–' : o.runs_today;
+    $('hRate').textContent = o.success_rate == null ? '–' : o.success_rate;
+    $('hErr').textContent = o.error_count == null ? '–' : o.error_count;
+    $('heroSub').textContent = (DEMO ? '演示数据 · ' : '') +
+      (state.ts ? '更新于 ' + String(state.ts).replace('T',' ').slice(11,19) : '正在连接实时数据…') +
+      ' · 仅显示今日';
+  }
+  function renderBots() {
+    var bots = state.bots || [];
+    $('botMeta').textContent = (state.overview.bot_online || 0) + '/' + (state.overview.bot_total || 0) + ' 在线';
+    $('botList').innerHTML = bots.length ? bots.map(function (b) {
+      var s = botStyle(b.status);
+      var label = (b.name || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || 'R';
+      return '<div class="row"><div class="avatar ' + s[3] + '">' + esc(label) + '</div>' +
+        '<div class="row-main"><div class="row-title">' + esc(b.current_app || b.name) + '</div>' +
+        '<div class="row-sub">' + esc(b.name) + ' · ' + esc(b.ip || 'IP 未知') + '</div></div>' +
+        (s[3] === 'run' ? '<span class="dot live"></span>' : '') +
+        '<span class="badge ' + s[1] + '">' + s[0] + '</span></div>';
+    }).join('') : emptyHtml('暂无机器人数据');
+    var sel = $('botPicker'), keep = sel.value;
+    var online = bots.filter(function (b) { return botStyle(b.status)[3] !== 'off'; });
+    sel.innerHTML = '<option value="">默认（影刀自动分配）</option>' + online.map(function (b) {
+      return '<option value="' + esc(b.name) + '">' + esc(b.name) + ' · ' + botStyle(b.status)[0] + '</option>';
+    }).join('');
+    if (keep) sel.value = keep;
+  }
+  function emptyHtml(text) {
+    return '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
+      '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 15h8"/></svg>' + esc(text) + '</div>';
+  }
+  function opsHtml(r, compact) {
+    var fail = isFail(r);
+    return '<div class="ops">' +
+      '<button class="op link" data-act="detail" data-id="' + esc(r.id) + '" data-bot="' + esc(r.bot_uuid) + '">查看详情</button>' +
+      (fail ? '<button class="op" data-act="logs" data-id="' + esc(r.id) + '" data-bot="' + esc(r.bot_uuid) + '">错误日志</button>' +
+        '<button class="op" data-act="shot" data-id="' + esc(r.id) + '" data-bot="' + esc(r.bot_uuid) + '">失败截图</button>' +
+        (canRetry(r) ? '<button class="op danger" data-act="retry" data-id="' + esc(r.id) + '" data-bot="' + esc(r.bot_uuid) + '">重试流程</button>' : '') +
+        (!compact ? '<button class="op" data-act="handle" data-id="' + esc(r.id) + '">标记已处理</button>' : '') : '') +
+      (r.status === 'running' && state.settings.allowRemoteControl !== false ?
+        '<button class="op danger" data-act="stop" data-id="' + esc(r.id) + '" data-bot="' + esc(r.bot_uuid) + '">停止</button>' : '') +
+      '</div>';
+  }
+  function renderRuns() {
+    var all = state.runs || [];
+    // 三个标签互斥展示：机器人 / 运行中 / 已完成。
+    // 「已完成」只放成功终态；失败、已停止、超时统一归底部「异常」标签页，避免重复展示。
+    var list = all.filter(function (r) {
+      if (filter === 'running') return runStyle(r.status)[3] === 'running';
+      if (filter === 'done') return runStyle(r.status)[3] === 'success';
+      return false;
+    }).slice(0, 25);
+    $('runMeta').textContent = list.length + ' 条';
+    $('runList').innerHTML = list.length ? list.map(function (r) {
+      var s = runStyle(r.status);
+      var meta = [duration(r.duration_sec), rel(r.create_time)].filter(Boolean).join(' · ');
+      return '<div class="tl-row"><div class="tl-rail"><span class="tl-dot" style="background:' + s[2] + '"></span><span class="tl-line"></span></div>' +
+        '<div class="tl-body"><div class="tl-top"><div class="tl-name">' + esc(r.app_name) + '</div>' +
+        '<span class="badge ' + s[1] + '">' + s[0] + '</span></div>' +
+        '<div class="tl-meta">' + esc(meta) + '</div>' +
+        (r.remark && isFail(r) ? '<div class="tl-remark">' + esc(r.remark) + '</div>' : '') +
+        opsHtml(r, true) + '</div></div>';
+    }).join('') : emptyHtml(filter === 'running' ? '当前没有运行中的流程' : '暂无已完成的流程');
+  }
+  function applyFilter() {
+    var isBots = filter === 'bots';
+    $('cardBots').style.display = isBots ? '' : 'none';
+    $('cardRuns').style.display = isBots ? 'none' : '';
+    $('runTitle').textContent = filter === 'running' ? '运行中的流程' : '已完成的流程';
+    var btns = document.querySelectorAll('[data-filter]');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].className = btns[i].getAttribute('data-filter') === filter ? 'on' : '';
+    }
+    renderRuns();
+  }
+  function renderAlarms() {
+    var hs = handled();
+    var fails = (state.runs || []).filter(isFail).filter(function (r) { return hs.indexOf(r.id) < 0; });
+    $('alarmMeta').textContent = fails.length + ' 条未处理';
+    var badge = $('tabBadge');
+    badge.style.display = fails.length ? 'block' : 'none';
+    badge.textContent = fails.length;
+    $('hErr').textContent = fails.length;
+    $('alarmList').innerHTML = fails.length ? fails.map(function (r) {
+      var s = runStyle(r.status);
+      return '<div class="alarm-card" style="padding:14px 16px;border-bottom:1px solid var(--border)">' +
+        '<div class="alarm-top"><div><div class="alarm-name">' + esc(r.app_name) + '</div>' +
+        '<div class="alarm-reason">' + esc(r.remark || '未返回错误原因') + '</div>' +
+        '<div class="alarm-time">' + esc(rel(r.create_time) || r.create_time || '') + ' · ' + esc(duration(r.duration_sec)) + '</div></div>' +
+        '<span class="badge ' + s[1] + '">' + s[0] + '</span></div>' +
+        opsHtml(r, false) + '</div>';
+    }).join('') : emptyHtml('没有未处理的异常，运行状况良好');
+  }
+  function renderApps() {
+    $('appMeta').textContent = state.appTotal + ' 个流程';
+    $('appList').innerHTML = state.apps.length ? state.apps.map(function (a) {
+      return '<div class="app-row"><div class="app-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>' +
+        '<div class="row-main"><div class="row-title">' + esc(a.appName) + '</div>' +
+        '<div class="row-sub">' + esc(a.ownerName || '未知负责人') + ' · ' + esc(String(a.publishTime||'').slice(0,16)) + '</div></div>' +
+        '<span class="tag-ver">v' + esc(a.version || '-') + '</span>' +
+        (state.settings.allowRemoteControl === false ? '' :
+          '<button class="run-btn" data-act="run" data-id="' + esc(a.appId) + '" data-name="' + esc(a.appName) + '">运行</button>') +
+        '</div>';
+    }).join('') : emptyHtml(state.keyword ? '没有匹配「' + state.keyword + '」的已发布流程' : '暂无已发布流程');
+    $('appMore').style.display = state.apps.length < state.appTotal ? 'inline-block' : 'none';
+  }
+  function renderSettings() {
+    var s = state.settings || {};
+    $('setMode').textContent = s.mockMode ? 'MOCK 演示数据' : '影刀真实数据';
+    $('setBaseUrl').textContent = s.baseUrl || '–';
+    $('setInterval').textContent = (s.pollInterval || 5) + ' 秒';
+    $('setControl').textContent = s.allowRemoteControl === false ? '已关闭' : '已启用';
+    $('setKeyState').textContent = s.hasCredentials ? '已配置 ' + esc(s.accessKeyIdMasked || '') : '未配置';
+    $('adminField').style.display = s.adminTokenRequired ? 'block' : 'none';
+    $('acctScope').textContent = s.onlyToday === false ? '全部历史' : '仅当天 ' + esc(s.date || state.date || '');
+    if (s.date) state.date = s.date;
+    if ($('baseInput').value !== API) $('baseInput').value = API;
+  }
+  function render() { renderHero(); renderBots(); renderAlarms(); renderApps(); renderSettings(); applyFilter(); }
+
+  /* ---------- 交互层 ---------- */
+  function setTab(name) {
+    tab = name;
+    ['board','alarm','apps','settings'].forEach(function (n) {
+      $('panel-' + n).style.display = n === name ? '' : 'none';
+    });
+    var tabs = document.querySelectorAll('.tab');
+    for (var i = 0; i < tabs.length; i++) {
+      tabs[i].className = 'tab' + (tabs[i].getAttribute('data-tab') === name ? ' on' : '');
+    }
+    if (name === 'settings') {
+      loadSettings();
+      if (ME.role === 'admin') loadUsers();
+    }
+    if (name === 'apps' && !state.apps.length) searchApps('', 1, false);
+    window.scrollTo(0, 0);
+  }
+  function closeOverlays() {
+    $('mask').classList.remove('show'); $('sheet').classList.remove('show');
+    $('dialog').classList.remove('show');
+  }
+  function confirmDo(title, text, okText, safe, fn) {
+    $('dlgTitle').textContent = title;
+    $('dlgText').textContent = text;
+    $('dlgOk').textContent = okText;
+    $('dlgOk').className = 'confirm' + (safe ? ' safe' : '');
+    $('dlgWarn').style.display = safe ? 'none' : 'block';
+    pending = fn;
+    $('mask').classList.add('show'); $('dialog').classList.add('show');
+  }
+  function openSheet(html, title, sub, foot) {
+    $('sheetTitle').textContent = title;
+    $('sheetSub').textContent = sub;
+    $('sheetBody').innerHTML = html;
+    $('sheetFoot').innerHTML = foot;
+    $('mask').classList.add('show'); $('sheet').classList.add('show');
+  }
+  function findRun(id) {
+    return (state.runs || []).filter(function (r) { return r.id === id; })[0] || {};
+  }
+  function openDetail(id, bot, focus) {
+    var r = findRun(id); currentRun = r;
+    var s = runStyle(r.status);
+    var foot = (canRetry(r) ? '<button class="btn pri" data-act="retry" data-id="' + esc(id) + '" data-bot="' + esc(bot) + '">重试流程</button>' : '') +
+      '<button class="btn ghost" data-act="shot" data-id="' + esc(id) + '" data-bot="' + esc(bot) + '">查看截图</button>' +
+      '<button class="btn ghost" data-act="close">关闭</button>';
+    var html = '<div class="kv">' +
+      '<div><small>运行状态</small><b style="color:' + s[2] + '">' + s[0] + '</b></div>' +
+      '<div><small>耗时</small><b>' + esc(duration(r.duration_sec)) + '</b></div>' +
+      '<div><small>开始时间</small><b>' + esc(String(r.create_time||'–').slice(5,16)) + '</b></div>' +
+      '<div><small>运行编号</small><b>' + esc(String(id).slice(0, 8)) + '…</b></div></div>' +
+      '<div class="block-title">错误信息 <span class="spin" id="detailSpin"></span></div>' +
+      '<div class="error-box" id="detailRemark">正在加载…</div>' +
+      '<div class="block-title">错误日志</div><div id="detailLogs"><div class="empty">正在加载…</div></div>' +
+      '<div class="block-title">失败截图</div><div id="detailShot"><div class="empty">正在加载…</div></div>';
+    openSheet(html, r.app_name || '运行详情', rel(r.create_time) + ' · ' + s[0], foot);
+    if (focus === 'logs') setTimeout(function () { $('sheet').scrollTop = 320; }, 260);
+    Promise.all([
+      api('/api/run/' + encodeURIComponent(id) + '/detail?botUuid=' + encodeURIComponent(bot || '')),
+      api('/api/run/' + encodeURIComponent(id) + '/logs?botUuid=' + encodeURIComponent(bot || ''))
+    ]).then(function (res) {
+      var jobs = (res[0].jobs || []), job = jobs[0] || {};
+      var remark = job.remark || r.remark || '影刀未返回错误备注';
+      $('detailRemark').textContent = remark;
+      var spin = $('detailSpin'); if (spin) spin.style.display = 'none';
+      var logs = res[1].logs || [];
+      $('detailLogs').innerHTML = logs.length ? logs.map(function (l) {
+        var bad = /错误|异常|error|fail/i.test(l.level || '');
+        return '<div class="log-item' + (bad ? ' is-err' : '') + '">' +
+          '<span class="log-time">' + esc(String(l.time||'').slice(11,19) || '–') + '</span>' +
+          '<span class="log-text">' + esc(l.text || l.content || '') + '</span></div>';
+      }).join('') : '<div class="empty">' + esc(res[1].error || '暂无日志（机器人离线时影刀不返回日志）') + '</div>';
+      var shot = job.screenshotUrl || '';
+      $('detailShot').innerHTML = shot ?
+        '<img class="shot-thumb" src="' + esc(shot) + '" alt="失败截图" data-act="viewer" data-url="' + esc(shot) + '">' :
+        '<div class="empty">该任务未返回错误截图</div>';
+    }).catch(function (e) {
+      $('detailRemark').textContent = '详情加载失败：' + e.message;
+      $('detailLogs').innerHTML = '<div class="empty">日志加载失败</div>';
+    });
+  }
+  function openShot(id, bot) {
+    toast('正在获取失败截图…');
+    api('/api/run/' + encodeURIComponent(id) + '/detail?botUuid=' + encodeURIComponent(bot || ''))
+      .then(function (d) {
+        var jobs = d.jobs || [], url = '';
+        for (var i = 0; i < jobs.length; i++) { if (jobs[i].screenshotUrl) { url = jobs[i].screenshotUrl; break; } }
+        if (!url) { toast(d.error || '该任务未返回错误截图'); return; }
+        $('viewerImg').src = url; $('viewerTip').textContent = '错误现场截图 · 点击外部关闭';
+        $('viewer').classList.add('show');
+      }).catch(function () { toast('截图获取失败'); });
+  }
+  function doRetry(id, bot) {
+    var r = findRun(id);
+    confirmDo('重试这个异常流程？', '将重新运行「' + (r.app_name || id) + '」，影刀会在原机器人上重跑该任务。',
+      '确认重试', false, function () {
+        toast('正在发送重试指令…');
+        api('/api/control/retry', { method:'POST', body:{ taskUuid:id, botUuid:bot || '' } })
+          .then(function (out) {
+            if (out.success) { toast('已重试，jobUuid ' + String(out.jobUuid||'').slice(0,8) + '…'); closeOverlays(); load(); }
+            else toast(out.msg || '重试未执行');
+          }).catch(function (e) { toast('网络异常：' + e.message); });
+      });
+  }
+  function doRun(appId, appName) {
+    var account = $('botPicker').value || '';
+    confirmDo('运行这个流程？', '「' + appName + '」' + (account ? ' 将在 ' + account + ' 上启动。' : ' 将由影刀自动分配机器人启动。'),
+      '确认运行', false, function () {
+        toast('正在启动…');
+        api('/api/control/start', { method:'POST', body:{ appId:appId, accountName:account } })
+          .then(function (out) {
+            if (out.success) {
+              toast('已启动 · jobUuid ' + String(out.jobUuid||'').slice(0,8) + '…');
+              closeOverlays(); setTab('board'); load();
+            } else toast(out.msg || '启动被拒绝');
+          }).catch(function (e) { toast('网络异常：' + e.message); });
+      });
+  }
+  function doStop(id, bot) {
+    var r = findRun(id);
+    confirmDo('停止运行中的应用？', '「' + (r.app_name || id) + '」会被中断，业务任务可能未完成，且不可撤销。',
+      '确认停止', false, function () {
+        api('/api/control/stop-by-task', { method:'POST', body:{ taskUuid:id, botUuid:bot || '' } })
+          .then(function (out) { toast(out.success ? '已发送停止指令' : (out.msg || '未执行停止')); load(); })
+          .catch(function (e) { toast('网络异常：' + e.message); });
+      });
+  }
+
+  /* ---------- 加载 ---------- */
+  function load() {
+    return api('/api/snapshot').then(function (res) {
+      state.overview = res.data.overview || {};
+      state.bots = res.data.bots || [];
+      state.runs = todayOnly(res.data.runs || []);
+      state.date = res.data.date || '';
+      state.ts = res.data.ts || '';
+      err(''); render();
+    }).catch(function (e) {
+      if (!DEMO) {
+        // 静态预览 / 后端未启动：自动切到演示数据，UI 仍可完整查看与操作
+        DEMO = true;
+        state.settings = D.settings;
+        state.apps = D.apps.apps; state.appTotal = D.apps.total;
+        conn(true, '演示数据'); err(''); render();
+        toast('后端未启动 · 已切换到演示数据');
+      } else {
+        err('数据拉取失败：' + e.message + ' · 检查后端是否运行');
+      }
+    });
+  }
+  function loadSettings() {
+    return api('/api/settings').then(function (s) { state.settings = s; renderSettings(); })
+      .catch(function (e) { toast('设置读取失败：' + e.message); });
+  }
+  function searchApps(keyword, page, append) {
+    state.keyword = keyword || ''; state.appPage = page;
+    $('appList').innerHTML = '<div class="empty"><span class="spin"></span> 正在搜索已发布流程…</div>';
+    return api('/api/apps/search?keyword=' + encodeURIComponent(state.keyword) + '&page=' + page + '&size=20')
+      .then(function (d) {
+        state.apps = append ? state.apps.concat(d.apps || []) : (d.apps || []);
+        state.appTotal = d.total || 0;
+        if (d.error) { toast('搜索失败：' + d.error); state.apps = []; }
+        renderApps();
+      }).catch(function (e) { $('appList').innerHTML = emptyHtml('搜索失败：' + e.message); });
+  }
+
+  /* ---------- WebSocket ---------- */
+  function connect() {
+    if (DEMO) { conn(true, '演示数据'); return; }
+    if (paused) { conn(false, '已退出登录'); return; }
+    if (ws && (ws.readyState === 0 || ws.readyState === 1)) return;
+    var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+    var host = API.replace(/^https?:\/\//, '');
+    var url = proto + host + '/ws' + (TOKEN ? '?token=' + encodeURIComponent(TOKEN) : '');
+    try { ws = new WebSocket(url); } catch (e) { schedule(); return; }
+    ws.onopen = function () { retry = 0; conn(true); err(''); };
+    ws.onmessage = function (ev) {
+      var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+      if (m.type === 'snapshot') {
+        state.overview = m.data.overview || {}; state.bots = m.data.bots || [];
+        state.runs = todayOnly(m.data.runs || []); state.date = m.data.date || '';
+        state.ts = m.data.ts || ''; render();
+      } else if (m.type === 'alarm') { toast('新增 ' + (m.data || []).length + ' 条运行异常'); load(); }
+      else if (m.type === 'delta' || m.type === 'callback' || m.type === 'control_result') load();
+    };
+    ws.onclose = function () { conn(false, '已断开·重连中'); schedule(); };
+    ws.onerror = function () { try { ws.close(); } catch (e) {} };
+  }
+  function schedule() {
+    if (wsTimer) return;
+    var delay = Math.min(2000 * Math.pow(2, retry), 30000); retry += 1;
+    wsTimer = setTimeout(function () { wsTimer = null; connect(); }, delay);
+  }
+
+  /* ---------- 事件委托 ---------- */
+  document.addEventListener('click', function (e) {
+    var tabEl = e.target.closest && e.target.closest('.tab');
+    if (tabEl) { setTab(tabEl.getAttribute('data-tab')); return; }
+    var seg = e.target.closest && e.target.closest('[data-filter]');
+    if (seg) {
+      filter = seg.getAttribute('data-filter');
+      applyFilter(); return;
+    }
+    var el = e.target.closest && e.target.closest('[data-act]');
+    if (!el) {
+      if (e.target.id === 'mask') { closeOverlays(); $('viewer').classList.remove('show'); }
+      return;
+    }
+    var act = el.getAttribute('data-act'), id = el.getAttribute('data-id') || '', bot = el.getAttribute('data-bot') || '';
+    switch (act) {
+      case 'refresh': load(); toast('已刷新'); break;
+      case 'go-apps': setTab('apps'); break;
+      case 'detail': closeOverlays(); openDetail(id, bot); break;
+      case 'logs': closeOverlays(); openDetail(id, bot, 'logs'); break;
+      case 'shot': openShot(id, bot); break;
+      case 'retry': doRetry(id, bot); break;
+      case 'run': doRun(id, el.getAttribute('data-name') || ''); break;
+      case 'stop': doStop(id, bot); break;
+      case 'handle': {
+        var hs = handled(); if (hs.indexOf(id) < 0) hs.push(id);
+        setHandled(hs); renderAlarms(); toast('已标记处理'); break;
+      }
+      case 'clear-handled': setHandled([]); renderAlarms(); toast('已恢复全部异常'); break;
+      case 'clear-search': $('appSearch').value = ''; searchApps('', 1, false); break;
+      case 'app-refresh':
+        api('/api/apps/refresh', { method:'POST' }).then(function (r) {
+          toast(r.success ? '目录已刷新：' + r.published + ' 个已发布流程' : (r.msg || '刷新失败'));
+          searchApps(state.keyword, 1, false);
+        }); break;
+      case 'app-more': searchApps(state.keyword, state.appPage + 1, true); break;
+      case 'app-search': searchApps($('appSearch').value.trim(), 1, false); break;
+      case 'viewer': $('viewerImg').src = el.getAttribute('data-url'); $('viewer').classList.add('show'); break;
+      case 'viewer-close': $('viewer').classList.remove('show'); $('viewerImg').src = ''; break;
+      case 'close': closeOverlays(); break;
+      case 'dlg-cancel': pending = null; closeOverlays(); break;
+      case 'dlg-ok': { var fn = pending; pending = null; closeOverlays(); if (fn) fn(); break; }
+      case 'test-conn':
+        api('/api/settings/test', { method:'POST' }).then(function (r) {
+          toast(r.success ? '连接正常 · ' + r.botCount + ' 台机器人' : ('失败：' + (r.msg || '未知')));
+        }).catch(function (x) { toast('连接失败：' + x.message); }); break;
+      case 'save-base': {
+        var v = ($('baseInput').value || '').trim().replace(/\/+$/, '');
+        if (!/^https?:\/\//i.test(v)) v = 'http://' + v;
+        if (!v) { toast('请填写后端地址'); break; }
+        try { localStorage.setItem(STORE_BASE, v); } catch (x) {}
+        API = v; toast('地址已保存，正在重连…'); load(); loadSettings();
+        if (ws) { try { ws.close(); } catch (x) {} }
+        break;
+      }
+      case 'reset-base': {
+        try { localStorage.removeItem(STORE_BASE); } catch (x) {}
+        API = DEFAULT_BASE; $('baseInput').value = API; toast('已恢复默认地址'); load(); break;
+      }
+      case 'save-key': {
+        var key = ($('keyInput').value || '').trim();
+        var secret = ($('secretInput').value || '').trim();
+        var token = ($('adminInput').value || '').trim();
+        if (!key || !secret) { toast('请填写 AccessKey ID 与 Secret'); break; }
+        api('/api/settings/credentials', {
+          method:'POST', token:token,
+          body:{ accessKeyId:key, accessKeySecret:secret }
+        }).then(function (r) {
+          if (r.success) {
+            $('secretInput').value = ''; $('adminInput').value = '';
+            toast('已保存并生效：' + r.accessKeyIdMasked); loadSettings();
+          } else toast(r.msg || '保存失败');
+        }).catch(function (x) { toast('保存失败：' + x.message); });
+        break;
+      }
+      /* ---- 登录 / 账号管理 ---- */
+      case 'login-submit': doLogin(); break;
+      case 'logout':
+        api('/api/auth/logout', { method:'POST' }).catch(function () {});
+        clearToken(); ME = { authenticated:false, authEnabled:true, username:'', role:'' };
+        paused = true;
+        if (wsTimer) { clearTimeout(wsTimer); wsTimer = null; }
+        if (ws) { try { ws.close(); } catch (x) {} ws = null; }
+        showGate('已退出登录');
+        break;
+      case 'pwd-change': {
+        var oldP = $('oldPwdInput').value || '', newP = $('newPwdInput').value || '';
+        if (newP.length < 6) { toast('新密码至少 6 位'); break; }
+        api('/api/auth/password', { method:'POST',
+          body:{ oldPassword:oldP, newPassword:newP } }).then(function (r) {
+            if (!r.success) { toast(r.msg || '修改失败'); return; }
+            $('oldPwdInput').value = ''; $('newPwdInput').value = '';
+            clearToken(); showGate(r.msg || '密码已修改，请重新登录');
+          }).catch(function (x) { toast('修改失败：' + x.message); });
+        break;
+      }
+      case 'user-add': {
+        var nu = ($('newUserInput').value || '').trim();
+        var np = $('newUserPwd').value || '';
+        if (!nu || np.length < 6) { toast('请填写账号与至少 6 位密码'); break; }
+        api('/api/auth/users', { method:'POST', body:{ username:nu, password:np } })
+          .then(function (r) {
+            if (!r.success) { toast(r.msg || '创建失败'); return; }
+            $('newUserInput').value = ''; $('newUserPwd').value = '';
+            toast('已创建普通用户：' + r.user.username); loadUsers();
+          }).catch(function (x) { toast('创建失败：' + x.message); });
+        break;
+      }
+      case 'user-refresh': loadUsers(); toast('账号列表已刷新'); break;
+      case 'user-del': {
+        var target = id;
+        confirmDo('删除这个账号？', '账号「' + target + '」将无法再登录；内置超级管理员不可删除。',
+          '确认删除', false, function () {
+            api('/api/auth/users/' + encodeURIComponent(target), { method:'DELETE' })
+              .then(function (r) {
+                toast(r.success ? '账号已删除' : (r.msg || '删除失败')); loadUsers();
+              }).catch(function (x) { toast('删除失败：' + x.message); });
+          });
+        break;
+      }
+    }
+  });
+  $('appSearch').addEventListener('input', function () {
+    clearTimeout(window._searchT);
+    window._searchT = setTimeout(function () { searchApps($('appSearch').value.trim(), 1, false); }, 320);
+  });
+  $('appSearch').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { clearTimeout(window._searchT); searchApps(this.value.trim(), 1, false); }
+  });
+
+  /* ---------- 启动：先问登录态，再拉数据 ---------- */
+  function boot() {
+    if (booted) return;
+    booted = true;
+    setTab(tab);
+    if (DEMO) {
+      state.apps = D.apps.apps; state.appTotal = D.apps.total; state.settings = D.settings;
+    }
+    // 首屏数据回来后再决定用真实 WS 还是演示模式，避免静态预览时空连重试
+    load().then(function () { loadSettings(); connect(); });
+    if (DEMO) render();
+    setInterval(function () { if (!DEMO && (!ws || ws.readyState !== 1)) load(); }, 20000);
+    setInterval(function () { if (ws && ws.readyState === 1) ws.send('ping'); }, 25000);
+  }
+  function checkAuth() {
+    if (DEMO) {
+      applyAccount({ authenticated:true, authEnabled:false,
+                     username:'演示管理员', role:'admin' });
+      boot(); return;
+    }
+    api('/api/auth/me').then(function (m) {
+      if (m.authEnabled === false || m.authenticated) {
+        applyAccount({ authenticated:true, authEnabled:m.authEnabled !== false,
+                       username:m.username || 'local', role:m.role || 'user' });
+        hideGate(); boot();
+      } else {
+        showGate('');
+      }
+    }).catch(function () {
+      // 后端不可达（静态预览 / 服务未启动）：自动切演示数据
+      DEMO = true;
+      applyAccount({ authenticated:true, authEnabled:false,
+                     username:'演示管理员', role:'admin' });
+      boot();
+      toast('后端未启动 · 已切换到演示数据');
+    });
+  }
+  $('loginPwd').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') doLogin();
+  });
+  $('loginUser').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('loginPwd').focus();
+  });
+  checkAuth();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+# 影刀 RPA 监控后端 systemd 单元
+# 用法：
+#   1. 编辑下面 WorkingDirectory / ExecStart 里的路径为实际部署路径
+#   2. 复制到 /etc/systemd/system/yingdao-monitor.service
+#   3. systemctl daemon-reload && systemctl enable --now yingdao-monitor
+#   4. journalctl -u yingdao-monitor -f  查日志
+[Unit]
+Description=Yingdao RPA Monitor Backend (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/yingdao-monitor/backend
+EnvironmentFile=/opt/yingdao-monitor/backend/.env
+ExecStart=/opt/yingdao-monitor/backend/.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+# .env 含影刀密钥与管理员口令，仅服务账户可读
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

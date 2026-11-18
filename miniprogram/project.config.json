@@ -1,0 +1,20 @@
+{
+  "description": "影刀RPA机器人监控小程序",
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "tests" },
+      { "type": "folder", "value": "node_modules" }
+    ]
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "checkSiteMap": true
+  },
+  "compileType": "miniprogram",
+  "appid": "wxda415b2d5d3629f9",
+  "projectname": "yingdao-monitor",
+  "condition": {}
+}
